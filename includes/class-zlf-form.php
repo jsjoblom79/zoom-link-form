@@ -32,8 +32,8 @@ class ZLF_Form {
         $device = $this->get_client_device();
         $token = $this->generate_token();
         
-        // Save submission data
-        $this->save_submission($email, $ip_address, $device, $token);
+        // Save submission data and get ID
+        $submission_id = $this->save_submission($email, $ip_address, $device, $token);
         
         // Get Zoom link from settings
         $zoom_base_url = get_option('zlf_zoom_link', '');
@@ -41,11 +41,11 @@ class ZLF_Form {
             wp_send_json_error(['message' => 'Zoom link not configured']);
         }
         
-        // Generate secure Zoom link
-        $zoom_link = add_query_arg(['token' => $token], $zoom_base_url);
+        // Generate redirect URL with submission ID
+        $redirect_url = home_url("/zlf-redirect/$submission_id");
         
         wp_send_json_success([
-            'zoom_link' => esc_url($zoom_link),
+            'zoom_link' => esc_url($redirect_url),
             'message' => 'Zoom link generated successfully'
         ]);
     }
@@ -110,6 +110,8 @@ class ZLF_Form {
             ],
             ['%s', '%s', '%s', '%s', '%s']
         );
+        
+        return $wpdb->insert_id;
     }
 }
 ?>

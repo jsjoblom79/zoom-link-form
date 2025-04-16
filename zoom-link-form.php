@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zoom Link Form
  * Description: A WordPress plugin to generate secure Zoom links via form submission with captcha
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: xAI, Justin Sjoblom
  * License: GPL-2.0+
  */
@@ -33,11 +33,16 @@ class ZLF_Plugin {
         
         // Activation hook to create database table
         register_activation_hook(__FILE__, [$this, 'activate']);
+        
+        // Add rewrite rule and query var for redirect endpoint
+        add_action('init', [$this, 'add_rewrite_rule']);
+        add_filter('query_vars', [$this, 'add_query_vars']);
+        add_action('template_redirect', [$this, 'handle_redirect']);
     }
     
     public function enqueue_assets() {
-        wp_enqueue_style('zlf-styles', ZLF_PLUGIN_URL . 'assets/css/zlf-styles.css', [], '1.1.0');
-        wp_enqueue_script('zlf-script', ZLF_PLUGIN_URL . 'assets/js/zlf-script.js', ['jquery'], '1.1.0', true);
+        wp_enqueue_style('zlf-styles', ZLF_PLUGIN_URL . 'assets/css/zlf-styles.css', [], '1.2.0');
+        wp_enqueue_script('zlf-script', ZLF_PLUGIN_URL . 'assets/js/zlf-script.js', ['jquery'], '1.2.0', true);
         
         // Localize script for AJAX
         wp_localize_script('zlf-script', 'zlfAjax', [
@@ -63,6 +68,49 @@ class ZLF_Plugin {
         
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta($sql);
+        
+        // Ensure rewrite rules are flushed
+        $this->add_rewrite_rule();
+        flush_rewrite_rules();
+    }
+    
+    public function add_rewrite_rule() {
+        add_rewrite_rule(
+            '^zlf-redirect/([0-9]+)/?$',
+            'index.php?zlf_submission_id=$matches[1]',
+            'top'
+        );
+    }
+    
+    public function add_query_vars($vars) {
+        $vars[] = 'zlf_submission_id';
+        return $vars;
+    }
+    
+    public function handle_redirect() {
+        $submission_id = get_query_var('zlf_submission_id');
+        if ($submission_id) {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'zlf_submissions';
+            $submission = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $submission_id));
+            
+            if ($submission) {
+                $validity_minutes = get_option('zlf_token_validity', 10); // Default 10 minutes
+                $created_at = strtotime($submission->created_at);
+                $now = current_time('timestamp');
+                
+                if (($now - $created_at) <= ($validity_minutes * 60)) {
+                    $zoom_url = get_option('zlf_zoom_link', '');
+                    if (!empty($zoom_url)) {
+                        wp_redirect($zoom_url);
+                        exit;
+                    }
+                }
+            }
+            
+            // If invalid or expired, show error
+            wp_die('Invalid or expired Zoom link.', 'Zoom Link Form', ['response' => 403]);
+        }
     }
 }
 

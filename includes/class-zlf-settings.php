@@ -28,6 +28,7 @@ class ZLF_Settings {
         register_setting('zlf_settings_group', 'zlf_recaptcha_secret_key', ['sanitize_callback' => 'sanitize_text_field']);
         register_setting('zlf_settings_group', 'zlf_use_custom_css', ['sanitize_callback' => 'sanitize_text_field']);
         register_setting('zlf_settings_group', 'zlf_custom_css', ['sanitize_callback' => 'wp_kses_post']);
+        register_setting('zlf_settings_group', 'zlf_token_validity', ['sanitize_callback' => 'absint']);
     }
     
     public function render_settings_page() {
@@ -44,6 +45,7 @@ class ZLF_Settings {
                         <th>Zoom Link</th>
                         <td>
                             <input type="url" name="zlf_zoom_link" value="<?php echo esc_attr(get_option('zlf_zoom_link')); ?>" class="regular-text" />
+                            <p class="description">Enter the base Zoom meeting URL (e.g., https://us02web.zoom.us/j/12345678901).</p>
                         </td>
                     </tr>
                     <tr>
@@ -64,6 +66,13 @@ class ZLF_Settings {
                         <th>reCAPTCHA Secret Key</th>
                         <td>
                             <input type="text" name="zlf_recaptcha_secret_key" value="<?php echo esc_attr(get_option('zlf_recaptcha_secret_key')); ?>" class="regular-text" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Token Validity (Minutes)</th>
+                        <td>
+                            <input type="number" name="zlf_token_validity" value="<?php echo esc_attr(get_option('zlf_token_validity', 60)); ?>" min="1" class="regular-text" />
+                            <p class="description">Set the duration (in minutes) for which the Zoom link is valid.</p>
                         </td>
                     </tr>
                     <tr>
