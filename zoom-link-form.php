@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Zoom Link Form
  * Description: A WordPress plugin to generate secure Zoom links via form submission with captcha
- * Version: 1.0.0
- * Author: xAI
+ * Version: 1.0.1
+ * Author: xAI, Justin Sjoblom
  * License: GPL-2.0+
  */
 
