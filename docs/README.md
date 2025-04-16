@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Zoom Link Form plugin allows WordPress users to create a form that collects an email address, verifies it with a captcha, and generates a secure Zoom link with a time-based token. The plugin supports a settings page for configuration and a shortcode for easy integration.
+The Zoom Link Form plugin allows WordPress users to create a form that collects an email address, verifies it with a captcha, and generates a secure Zoom link with a time-based token. The plugin stores submission data (email, IP address, device, token, and timestamp) and provides options to export data as CSV and delete stored data.
 
 ## Installation
 
@@ -25,6 +25,12 @@ The Zoom Link Form plugin allows WordPress users to create a form that collects 
 2. Optionally, customize the form's appearance by adding a custom class: `[zlf_form class="your-custom-class"]`.
 3. Users will submit their email and complete the captcha to receive a secure Zoom link displayed on the same page.
 
+## Data Management
+
+- **Storage**: Each form submission stores the email, IP address, device (user agent), token, and timestamp in the `wp_zlf_submissions` table.
+- **Export**: In **Settings > Zoom Link Form**, click "Export Submissions as CSV" to download a CSV file containing all submission data.
+- **Delete**: Click "Delete All Submission Data" to clear the table (requires confirmation).
+
 ## Styling
 
 - The plugin includes default styles in `assets/css/zlf-styles.css`.
@@ -36,6 +42,7 @@ The Zoom Link Form plugin allows WordPress users to create a form that collects 
 - **Form not displaying**: Ensure the shortcode is correctly placed and the plugin is activated.
 - **Captcha errors**: Verify that the reCAPTCHA keys are correct and the site is accessible to Google's servers.
 - **Zoom link not generating**: Check that a valid Zoom URL is entered in the settings.
+- **Export/Delete issues**: Ensure you have admin permissions and check the PHP error log for issues.
 
 ## Support
 

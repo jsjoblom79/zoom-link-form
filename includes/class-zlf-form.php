@@ -27,8 +27,13 @@ class ZLF_Form {
             wp_send_json_error(['message' => 'Captcha verification failed']);
         }
         
-        // Generate time-based token
+        // Get client data
+        $ip_address = $this->get_client_ip();
+        $device = $this->get_client_device();
         $token = $this->generate_token();
+        
+        // Save submission data
+        $this->save_submission($email, $ip_address, $device, $token);
         
         // Get Zoom link from settings
         $zoom_base_url = get_option('zlf_zoom_link', '');
@@ -66,7 +71,6 @@ class ZLF_Form {
             return isset($result->success) && $result->success;
         }
         
-        // Add support for other captcha types here
         return false;
     }
     
@@ -74,6 +78,38 @@ class ZLF_Form {
         $time = time();
         $secret = wp_generate_password(32, false);
         return hash_hmac('sha256', $time, $secret);
+    }
+    
+    private function get_client_ip() {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        }
+        return sanitize_text_field($ip);
+    }
+    
+    private function get_client_device() {
+        $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'Unknown';
+        return sanitize_text_field($user_agent);
+    }
+    
+    private function save_submission($email, $ip_address, $device, $token) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'zlf_submissions';
+        
+        $wpdb->insert(
+            $table_name,
+            [
+                'email' => $email,
+                'ip_address' => $ip_address,
+                'device' => $device,
+                'token' => $token,
+                'created_at' => current_time('mysql')
+            ],
+            ['%s', '%s', '%s', '%s', '%s']
+        );
     }
 }
 ?>

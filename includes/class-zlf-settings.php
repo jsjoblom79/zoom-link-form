@@ -7,6 +7,8 @@ class ZLF_Settings {
     public function __construct() {
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
+        add_action('wp_ajax_zlf_export_data', [$this, 'export_data']);
+        add_action('wp_ajax_zlf_delete_data', [$this, 'delete_data']);
     }
     
     public function add_settings_page() {
@@ -49,7 +51,6 @@ class ZLF_Settings {
                         <td>
                             <select name="zlf_captcha_type">
                                 <option value="recaptcha" <?php selected(get_option('zlf_captcha_type'), 'recaptcha'); ?>>Google reCAPTCHA</option>
-                                <!-- Add more captcha options here -->
                             </select>
                         </td>
                     </tr>
@@ -80,8 +81,112 @@ class ZLF_Settings {
                 </table>
                 <?php submit_button(); ?>
             </form>
+            <h2>Data Management</h2>
+            <p>
+                <button id="zlf-export-data" class="button button-secondary">Export Submissions as CSV</button>
+                <button id="zlf-delete-data" class="button button-secondary">Delete All Submission Data</button>
+            </p>
+            <script>
+                jQuery(document).ready(function($) {
+                    $('#zlf-export-data').on('click', function(e) {
+                        e.preventDefault();
+                        $.ajax({
+                            url: ajaxurl,
+                            type: 'POST',
+                            data: {
+                                action: 'zlf_export_data',
+                                nonce: '<?php echo wp_create_nonce('zlf_export_nonce'); ?>'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    window.location.href = response.data.url;
+                                } else {
+                                    alert('Export failed: ' + response.data.message);
+                                }
+                            }
+                        });
+                    });
+                    
+                    $('#zlf-delete-data').on('click', function(e) {
+                        e.preventDefault();
+                        if (confirm('Are you sure you want to delete all submission data? This cannot be undone.')) {
+                            $.ajax({
+                                url: ajaxurl,
+                                type: 'POST',
+                                data: {
+                                    action: 'zlf_delete_data',
+                                    nonce: '<?php echo wp_create_nonce('zlf_delete_nonce'); ?>'
+                                },
+                                success: function(response) {
+                                    if (response.success) {
+                                        alert('Submission data deleted successfully.');
+                                    } else {
+                                        alert('Deletion failed: ' + response.data.message);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                });
+            </script>
         </div>
         <?php
+    }
+    
+    public function export_data() {
+        check_ajax_referer('zlf_export_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permission denied']);
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'zlf_submissions';
+        $results = $wpdb->get_results("SELECT * FROM $table_name", ARRAY_A);
+        
+        if (empty($results)) {
+            wp_send_json_error(['message' => 'No data to export']);
+        }
+        
+        $upload_dir = wp_upload_dir();
+        $file_path = $upload_dir['basedir'] . '/zlf-submissions-' . date('Y-m-d-H-i-s') . '.csv';
+        $file_url = $upload_dir['baseurl'] . '/zlf-submissions-' . date('Y-m-d-H-i-s') . '.csv';
+        
+        $file = fopen($file_path, 'w');
+        fputcsv($file, ['ID', 'Email', 'IP Address', 'Device', 'Token', 'Created At']);
+        
+        foreach ($results as $row) {
+            fputcsv($file, [
+                $row['id'],
+                $row['email'],
+                $row['ip_address'],
+                $row['device'],
+                $row['token'],
+                $row['created_at']
+            ]);
+        }
+        
+        fclose($file);
+        
+        wp_send_json_success(['url' => $file_url]);
+    }
+    
+    public function delete_data() {
+        check_ajax_referer('zlf_delete_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permission denied']);
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'zlf_submissions';
+        $result = $wpdb->query("TRUNCATE TABLE $table_name");
+        
+        if ($result !== false) {
+            wp_send_json_success(['message' => 'Data deleted successfully']);
+        } else {
+            wp_send_json_error(['message' => 'Failed to delete data']);
+        }
     }
 }
 ?>
