@@ -1,0 +1,41 @@
+.zlf-form {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.zlf-form-group {
+    margin-bottom: 15px;
+}
+
+.zlf-form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.zlf-form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.zlf-form button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.zlf-form button:hover {
+    background-color: #0056b3;
+}
+
+#zlf-response {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
